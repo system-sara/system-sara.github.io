@@ -1,0 +1,944 @@
+/* css/alerts.css
+   ============================================================
+   Sistema de Alerta Meteorológica — Buscador Lugares Antamina
+   ------------------------------------------------------------
+   v5 (2026-10):
+   - background/border del panel, barra y tarjeta se aplican por
+     JS (fix Chrome cacheo). El CSS deja solo fallbacks estáticos.
+   - Los bloques .al-modo-libre conservan su fondo verde estático.
+   ============================================================ */
+
+/* ============================================================
+   VARIABLES POR NIVEL DE ALERTA
+   ============================================================ */
+:root {
+    --al-vigilancia: #2ecc71;
+    --al-precaucion: #f1c40f;
+    --al-alerta:     #e67e22;
+    --al-emergencia: #e74c3c;
+    --al-verde-neon: #39ff14;
+}
+
+/* ============================================================
+   FLASH DE FONDO
+   ============================================================ */
+@keyframes al-flash-relampago {
+    0%   { background-color: transparent; }
+    8%   { background-color: #3a3a3a; }
+    10%  { background-color: #ffffff; }
+    12%  { background-color: #3a3a3a; }
+    30%  { background-color: #3a3a3a; }
+    32%  { background-color: #ffffff; }
+    34%  { background-color: #3a3a3a; }
+    60%  { background-color: #3a3a3a; }
+    100% { background-color: transparent; }
+}
+
+.al-flash-activo {
+    animation: al-flash-relampago 4.5s ease-out 1 forwards;
+}
+
+/* ============================================================
+   OVERLAY + BANNER A PANTALLA COMPLETA
+   ============================================================ */
+#al-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 30000;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    padding-top: 40px;
+    overflow-y: auto;
+}
+
+#al-overlay.al-visible {
+    display: flex;
+    opacity: 1;
+}
+
+.al-panel {
+    width: min(92vw, 640px);
+    margin-top: -120vh;
+    border-radius: 18px;
+    padding: 30px 28px 26px;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    position: relative;
+    overflow: hidden;
+    /* background y border-color se aplican por JS (fix Chrome cacheo).
+       Aquí solo fallback estático. */
+    background: linear-gradient(160deg, #e74c3c, #c0392b);
+    border: 3px solid #e74c3c;
+    transform: translateY(0);
+}
+
+@keyframes al-bajar-rebote {
+    0%   { margin-top: -120vh; }
+    60%  { margin-top: 30px; }
+    72%  { margin-top: 0; }
+    84%  { margin-top: 22px; }
+    93%  { margin-top: 8px; }
+    100% { margin-top: 20px; }
+}
+
+#al-overlay.al-visible .al-panel {
+    animation: al-bajar-rebote 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
+}
+
+@keyframes al-resplandor {
+    0%, 100% { box-shadow: 0 20px 60px rgba(0,0,0,0.5),
+                            0 0 0 rgba(231,76,60,0); }
+    50%      { box-shadow: 0 20px 60px rgba(0,0,0,0.5),
+                            0 0 45px 8px var(--al-glow, rgba(231,76,60,0.7)); }
+}
+
+.al-panel.al-resplandor-activo {
+    animation: al-bajar-rebote 0.9s cubic-bezier(0.22, 1.2, 0.36, 1) forwards,
+               al-resplandor 2.4s ease-in-out 1s infinite;
+}
+
+@keyframes al-sirena-borde {
+    0%, 100% { border-color: var(--al-color, #e74c3c); }
+    50%      { border-color: var(--al-color-dark, #c0392b); }
+}
+
+.al-panel.al-sirena-activa {
+    border: 4px solid var(--al-color, #e74c3c);
+    animation: al-bajar-rebote 0.9s cubic-bezier(0.22,1.2,0.36,1) forwards,
+               al-sirena-borde 1s steps(1, end) 1s infinite,
+               al-resplandor 2.4s ease-in-out 1.4s infinite;
+}
+
+.al-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%,
+                rgba(255,255,255,0.18), transparent 60%);
+    pointer-events: none;
+}
+
+/* ============================================================
+   ICONO GRANDE + PULSO RADAR
+   ============================================================ */
+.al-icono-wrap {
+    position: relative;
+    width: 110px;
+    height: 110px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.al-icono {
+    font-size: 84px;
+    line-height: 1;
+    z-index: 3;
+    position: relative;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+    animation: al-icono-tilt 3s ease-in-out infinite;
+}
+
+@keyframes al-icono-tilt {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50%      { transform: scale(1.12) rotate(-6deg); }
+}
+
+.al-radar {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 2px solid var(--al-color, #e74c3c);
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.al-radar.r1 { animation: al-radar-pulso 2s ease-out infinite; }
+.al-radar.r2 { animation: al-radar-pulso 2s ease-out 0.66s infinite; }
+.al-radar.r3 { animation: al-radar-pulso 2s ease-out 1.32s infinite; }
+
+@keyframes al-radar-pulso {
+    0%   { transform: translate(-50%,-50%) scale(0.6); opacity: 0.9; }
+    100% { transform: translate(-50%,-50%) scale(2.8); opacity: 0; }
+}
+
+/* ============================================================
+   ANIMACIÓN DEL RAYO SVG
+   ============================================================ */
+.al-rayo-svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90px;
+    height: 90px;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 4;
+    filter: drop-shadow(0 0 14px rgba(255, 235, 59, 0.95))
+            drop-shadow(0 0 28px rgba(255, 235, 59, 0.6));
+    opacity: 0;
+    animation: al-rayo-flash 4.5s ease-in-out 1.2s infinite;
+    pointer-events: none;
+}
+
+@keyframes al-rayo-flash {
+    0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-8deg); }
+    4%   { opacity: 1; transform: translate(-50%,-50%) scale(1.15) rotate(-8deg); }
+    8%   { opacity: 0.4; transform: translate(-50%,-50%) scale(1) rotate(-8deg); }
+    10%  { opacity: 1; transform: translate(-50%,-50%) scale(1.1) rotate(-8deg); }
+    14%  { opacity: 0; transform: translate(-50%,-50%) scale(0.6) rotate(-8deg); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.3) rotate(-8deg); }
+}
+
+/* ============================================================
+   TEXTO DEL BANNER
+   ============================================================ */
+.al-titulo {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.al-nivel-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(0,0,0,0.28);
+    margin: 0 auto 12px;
+}
+
+.al-mensaje {
+    text-align: center;
+    font-size: 16px;
+    line-height: 1.55;
+    margin: 10px 4px 16px;
+    opacity: 0.97;
+}
+
+.al-recomendacion {
+    text-align: center;
+    font-size: 14px;
+    font-style: italic;
+    opacity: 0.9;
+    margin: 0 4px 18px;
+}
+
+/* ============================================================
+   CONTADOR REGRESIVO
+   ============================================================ */
+.al-contador-wrap {
+    text-align: center;
+    margin: 0 0 18px;
+}
+
+.al-contador-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.85;
+    margin-bottom: 4px;
+}
+
+.al-contador {
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    text-shadow: 0 0 14px rgba(255,255,255,0.35);
+}
+
+.al-contador.al-critico {
+    color: #fff;
+    animation: al-contador-parpadeo 0.6s ease-in-out infinite;
+}
+
+@keyframes al-contador-parpadeo {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+}
+
+/* ============================================================
+   BOTONES DE ACCIÓN
+   ============================================================ */
+.al-botones {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.al-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 13px 18px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.al-btn:active { transform: scale(0.96); }
+
+.al-btn-primario {
+    background: #fff;
+    color: var(--al-color-dark, #c0392b);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+}
+.al-btn-primario:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.4);
+    filter: brightness(1.05);
+}
+
+.al-btn-secundario {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.5);
+    backdrop-filter: blur(4px);
+}
+.al-btn-secundario:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+}
+
+.al-btn-cerrar {
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    min-width: 110px;
+    flex: 0 0 auto;
+}
+.al-btn-cerrar:hover {
+    background: rgba(0,0,0,0.55);
+    transform: translateY(-2px);
+}
+
+/* ============================================================
+   BARRA SUPERIOR PERMANENTE
+   ============================================================ */
+#al-barra-superior {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    left: auto !important;
+    margin: 0 !important;
+
+    width: auto;
+    max-width: 320px;
+    min-height: 38px;
+
+    z-index: 25000;
+
+    display: none;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 12px;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+
+    /* background y border-color se aplican por JS (fix Chrome cacheo).
+       Aquí solo fallback estático. */
+    background: linear-gradient(160deg, rgba(20,20,25,0.96), #c0392b);
+    border: 1px solid #e74c3c;
+    border-radius: 8px;
+
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        0 0 12px var(--al-glow, rgba(231,76,60,0.6));
+
+    transform: translateY(-100px);
+    transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1);
+    cursor: pointer;
+}
+
+#al-barra-superior.al-visible {
+    display: flex;
+    transform: translateY(0);
+}
+
+.al-barra-icono { font-size: 16px; flex-shrink: 0; }
+.al-barra-texto { flex: 1; min-width: 0; }
+.al-barra-nivel { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px; }
+.al-barra-desc  { font-size: 10px; opacity: 0.95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.al-barra-tiempo { font-size: 9.5px; opacity: 0.85; flex-shrink: 0; white-space: nowrap; }
+
+.al-barra-cerrar {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.al-barra-cerrar:hover { background: rgba(255,255,255,0.4); }
+
+@keyframes al-barra-brillo {
+    0%, 100% { box-shadow: 0 3px 14px rgba(0,0,0,0.35); }
+    50%      { box-shadow: 0 3px 14px rgba(0,0,0,0.35),
+                            0 4px 22px 0 var(--al-glow, rgba(231,76,60,0.6)); }
+}
+#al-barra-superior.al-visible {
+    animation: al-barra-brillo 3s ease-in-out infinite;
+}
+
+/* ============================================================
+   TARJETA FLOTANTE — separada 5px del footer
+   ============================================================ */
+#al-tarjeta {
+    position: fixed;
+    /* Footer 27px + 5px de separación + safe-area para móviles con notch */
+    bottom: calc(27px + 5px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+    left: auto !important;
+    width: 240px;
+    max-width: calc(100vw - 32px);
+    padding: 12px 14px;
+    border-radius: 12px;
+
+    /* background y border-left se aplican por JS (fix Chrome cacheo).
+       Aquí solo fallback estático. */
+    background: linear-gradient(160deg, rgba(20,20,25,0.96), #c0392b);
+    border-left: 4px solid #e74c3c;
+
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 24000;
+    display: none;
+    opacity: 0;
+    transform: translateY(60px);
+    transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1), opacity 0.35s ease;
+}
+
+#al-tarjeta.al-visible {
+    display: block;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.al-tarjeta-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.al-tarjeta-icono {
+    font-size: 20px;
+    line-height: 1;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.al-tarjeta-icono::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--al-color, #e74c3c);
+    animation: al-radar-pulso 2.2s ease-out infinite;
+}
+
+.al-tarjeta-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.al-tarjeta-sub {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+}
+
+.al-tarjeta-cuerpo {
+    font-size: 11px;
+    line-height: 1.35;
+    margin: 6px 0 0;
+    opacity: 0.9;
+}
+
+.al-tarjeta-cuerpo strong { color: #fff; }
+
+.al-tarjeta-btn {
+    width: 100%;
+    padding: 7px;
+    font-size: 11px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    background: var(--al-color, #e74c3c);
+    color: #fff;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.15s;
+}
+.al-tarjeta-btn:hover { filter: brightness(1.12); }
+.al-tarjeta-btn:active { transform: scale(0.97); }
+
+.al-tarjeta-cerrar {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.al-tarjeta-cerrar:hover { color: #fff; }
+
+/* ============================================================
+   EFECTOS EN EL MAPA
+   ============================================================ */
+.al-mapa-rayo {
+    position: relative;
+    width: 46px;
+    height: 46px;
+}
+
+.al-mapa-rayo-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 8px rgba(255, 235, 59, 0.9));
+    animation: al-mapa-rayo-cae 2.5s ease-in-out infinite;
+}
+
+@keyframes al-mapa-rayo-cae {
+    0%, 70%, 100% { opacity: 0; transform: translateY(-30px) scale(0.6); }
+    75% { opacity: 1; transform: translateY(0) scale(1.2); }
+    82% { opacity: 0.8; transform: translateY(0) scale(1); }
+    90% { opacity: 1; transform: translateY(0) scale(1.1); }
+    95% { opacity: 0; transform: translateY(0) scale(0.8); }
+}
+
+@keyframes al-mapa-pulso {
+    0%, 100% { opacity: 0.9; }
+    50%      { opacity: 0.3; }
+}
+
+/* ============================================================
+   GLOW PULSANTE PARA POLÍGONOS DE ZONA EN ALERTA
+   ============================================================ */
+@keyframes al-zona-glow-pulso {
+    0%   { filter: drop-shadow(0 0 3px  currentColor) drop-shadow(0 0 6px  currentColor); }
+    50%  { filter: drop-shadow(0 0 12px currentColor) drop-shadow(0 0 22px currentColor); }
+    100% { filter: drop-shadow(0 0 3px  currentColor) drop-shadow(0 0 6px  currentColor); }
+}
+
+.al-zona-glow {
+    animation: al-zona-glow-pulso 1.6s ease-in-out infinite;
+}
+
+.al-zona-sin-glow {
+    filter: none;
+}
+
+/* ============================================================
+   MODAL DE MEDIDAS DE SEGURIDAD
+   ============================================================ */
+#al-modal-seguridad {
+    position: fixed;
+    inset: 0;
+    z-index: 32000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 20px;
+}
+
+#al-modal-seguridad.al-visible {
+    display: flex;
+    opacity: 1;
+}
+
+.al-modal-contenido {
+    width: min(90vw, 520px);
+    max-height: 85vh;
+    overflow-y: auto;
+    background: #232326;
+    color: #fff;
+    border-radius: 18px;
+    padding: 28px 26px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    border: 2px solid var(--al-color, #e74c3c);
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.22,1.2,0.36,1);
+}
+
+#al-modal-seguridad.al-visible .al-modal-contenido {
+    transform: scale(1);
+}
+
+.al-modal-titulo {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    text-align: center;
+}
+
+.al-modal-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--al-color, #e74c3c);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+}
+
+.al-medida {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.al-medida-icono { font-size: 22px; flex-shrink: 0; line-height: 1.2; }
+.al-medida-texto { flex: 1; }
+.al-medida-texto strong { color: var(--al-color, #e74c3c); }
+
+.al-modal-cerrar {
+    width: 100%;
+    margin-top: 8px;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    background: var(--al-color, #e74c3c);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.2s, transform 0.15s;
+}
+.al-modal-cerrar:hover { filter: brightness(1.12); }
+.al-modal-cerrar:active { transform: scale(0.97); }
+
+/* ============================================================
+   LEYENDA DE NIVELES
+   ============================================================ */
+.al-leyenda {
+    margin: 8px 0 18px;
+    padding: 12px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+}
+
+.al-leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.al-leyenda-item:last-child { border-bottom: none; }
+
+.al-leyenda-punto {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.al-leyenda-nombre { font-weight: 700; }
+.al-leyenda-desc { color: #bbb; font-size: 12px; }
+
+/* ============================================================
+   ESTADO "LIBRE DE ALERTAS" (overlay + panel)
+   ------------------------------------------------------------
+   El modo libre SÍ usa background estático porque no cambia
+   dinámicamente entre niveles. El JS resetea los inline styles
+   para que estas reglas tomen el control.
+   ============================================================ */
+#al-overlay.al-libre {
+    background: rgba(20, 60, 35, 0.45);
+    backdrop-filter: blur(2px);
+}
+
+#al-overlay.al-libre .al-panel {
+    background: linear-gradient(160deg, #1a4d2e 0%, #0d3520 100%);
+    border: 2px solid var(--al-color, #2ecc71);
+    box-shadow:
+        0 0 40px var(--al-glow, rgba(46, 204, 113, 0.6)),
+        0 0 80px rgba(46, 204, 113, 0.3),
+        inset 0 0 30px rgba(46, 204, 113, 0.08);
+}
+
+#al-overlay.al-libre .al-panel.al-sirena-activa {
+    animation: none;
+    border-color: var(--al-color, #2ecc71);
+}
+
+#al-overlay.al-libre .al-nivel-badge {
+    background: var(--al-color, #2ecc71);
+    color: #0d3520;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 18px var(--al-glow, rgba(46, 204, 113, 0.6));
+}
+
+#al-overlay.al-libre .al-icono {
+    color: var(--al-color, #2ecc71);
+    text-shadow:
+        0 0 20px var(--al-glow, rgba(46, 204, 113, 0.7)),
+        0 0 40px rgba(46, 204, 113, 0.4);
+    animation: al-pulso-verde 3s ease-in-out infinite;
+}
+
+@keyframes al-pulso-verde {
+    0%, 100% { transform: scale(1); opacity: 0.95; }
+    50%      { transform: scale(1.06); opacity: 1; }
+}
+
+#al-overlay.al-libre .al-radar {
+    border-color: var(--al-color, #2ecc71);
+    animation: al-radar-pulso 2.2s ease-out infinite;
+}
+#al-overlay.al-libre .al-radar.r2 { animation-delay: 0.7s; }
+#al-overlay.al-libre .al-radar.r3 { animation-delay: 1.4s; }
+
+#al-overlay.al-libre .al-rayo-svg { display: none; }
+
+#al-overlay.al-libre .al-titulo {
+    color: var(--al-color, #2ecc71);
+    text-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
+}
+
+#al-overlay.al-libre .al-mensaje,
+#al-overlay.al-libre .al-recomendacion {
+    color: #c8f0d4;
+}
+
+#al-overlay.al-libre .al-btn-primario {
+    background: var(--al-color, #2ecc71);
+    color: #0d3520;
+    border-color: var(--al-color-dark, #27ae60);
+}
+#al-overlay.al-libre .al-btn-primario:hover {
+    background: var(--al-color-dark, #27ae60);
+    color: #fff;
+}
+#al-overlay.al-libre .al-btn-secundario {
+    border-color: var(--al-color, #2ecc71);
+    color: var(--al-color, #2ecc71);
+}
+#al-overlay.al-libre .al-btn-cerrar {
+    background: rgba(46, 204, 113, 0.15);
+    border-color: var(--al-color, #2ecc71);
+    color: var(--al-color, #2ecc71);
+}
+#al-overlay.al-libre .al-btn-cerrar:hover {
+    background: var(--al-color, #2ecc71);
+    color: #0d3520;
+}
+
+/* ============================================================
+   MODO "LIBRE" — Barra superior + Tarjeta verde PERSISTENTE
+   ------------------------------------------------------------
+   El JS resetea los inline styles (background) para que estas
+   reglas tomen el control cuando el estado es "libre".
+   ============================================================ */
+#al-barra-superior.al-modo-libre {
+    display: flex !important;
+    transform: translateY(0) !important;
+    background: linear-gradient(160deg, #1a4d2e 0%, #0d3520 100%) !important;
+    border: 1px solid var(--al-color, #2ecc71) !important;
+}
+
+#al-barra-superior.al-modo-libre .al-barra-icono {
+    color: var(--al-color, #2ecc71);
+    text-shadow: 0 0 12px var(--al-glow, rgba(46, 204, 113, 0.6));
+    animation: al-pulso-verde 3s ease-in-out infinite;
+}
+
+#al-barra-superior.al-modo-libre .al-barra-nivel {
+    color: var(--al-color, #2ecc71);
+    font-weight: 700;
+    text-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+}
+
+#al-barra-superior.al-modo-libre .al-barra-desc { color: #c8f0d4; }
+
+#al-barra-superior.al-modo-libre .al-barra-tiempo {
+    color: #8fd9a8;
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+#al-barra-superior.al-modo-libre .al-barra-cerrar { display: none !important; }
+
+#al-tarjeta.al-modo-libre {
+    display: block !important;
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    background: linear-gradient(160deg, #1a4d2e 0%, #0d3520 100%) !important;
+    border-left: 4px solid var(--al-color, #2ecc71) !important;
+    box-shadow: 0 4px 30px rgba(46, 204, 113, 0.35), 0 0 15px rgba(46, 204, 113, 0.2);
+}
+
+#al-tarjeta.al-modo-libre .al-tarjeta-icono {
+    color: var(--al-color, #2ecc71);
+    text-shadow: 0 0 15px var(--al-glow, rgba(46, 204, 113, 0.6));
+    animation: al-pulso-verde 3s ease-in-out infinite;
+}
+
+#al-tarjeta.al-modo-libre .al-tarjeta-icono::after { display: none; }
+#al-tarjeta.al-modo-libre .al-tarjeta-sub { color: var(--al-color, #2ecc71); }
+#al-tarjeta.al-modo-libre .al-tarjeta-titulo { color: #e0f5e8; }
+#al-tarjeta.al-modo-libre .al-tarjeta-cuerpo { color: #c8f0d4; }
+#al-tarjeta.al-modo-libre .al-tarjeta-cuerpo strong { color: var(--al-color, #2ecc71); }
+#al-tarjeta.al-modo-libre .al-tarjeta-btn { display: none !important; }
+#al-tarjeta.al-modo-libre .al-tarjeta-cerrar { display: none !important; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 600px) {
+    .al-panel { padding: 22px 16px 20px; }
+    .al-titulo { font-size: 21px; }
+    .al-icono { font-size: 70px; }
+    .al-icono-wrap { width: 90px; height: 90px; }
+    .al-contador { font-size: 26px; }
+    .al-btn { min-width: 100%; }
+    .al-botones { flex-direction: column; }
+
+    #al-barra-superior {
+        top: 10px !important;
+        right: 10px !important;
+        left: auto !important;
+        max-width: 210px !important;
+        padding: 5px 8px !important;
+        font-size: 9.5px !important;
+    }
+
+    .al-barra-icono { font-size: 14px !important; }
+    .al-barra-desc { display: none !important; }
+    .al-barra-tiempo { display: none !important; }
+    .al-barra-cerrar { width: 18px !important; height: 18px !important; font-size: 11px !important; }
+
+    #al-tarjeta {
+        right: 10px !important;
+        left: auto !important;
+        width: 175px !important;
+        max-width: 45vw !important;
+        padding: 8px 10px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.4) !important;
+    }
+
+    .al-tarjeta-header { gap: 6px !important; margin-bottom: 2px !important; }
+    .al-tarjeta-icono { font-size: 16px !important; }
+    .al-tarjeta-titulo { font-size: 10.5px !important; line-height: 1.1 !important; }
+    .al-tarjeta-sub { font-size: 8px !important; letter-spacing: 0.5px !important; }
+    .al-tarjeta-cuerpo { font-size: 9px !important; line-height: 1.2 !important; margin: 2px 0 0 !important; }
+    .al-tarjeta-btn { padding: 5px !important; font-size: 10px !important; border-radius: 4px !important; margin-top: 4px !important; }
+    .al-tarjeta-cerrar { top: 4px !important; right: 6px !important; font-size: 12px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .al-panel,
+    .al-radar,
+    .al-rayo-svg,
+    .al-icono,
+    .al-mapa-rayo-svg,
+    #al-barra-superior,
+    .al-contador.al-critico,
+    .al-zona-glow {
+        animation: none !important;
+    }
+    #al-overlay.al-visible .al-panel { margin-top: 20px; }
+}
+/* ============================================================
+   ETIQUETA PERMANENTE DE LOS PUNTOS DE ZONA
+   (nombre corto siempre visible, 8px, azul)
+   ============================================================ */
+.leaflet-tooltip.label-punto-mapa {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #1a73e8 !important; /* Azul Google Maps */
+    font-size: 8px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-shadow: 
+        -1px -1px 0 #fff,  
+         1px -1px 0 #fff,
+        -1px  1px 0 #fff,
+         1px  1px 0 #fff; /* Borde blanco para que se lea sobre el satélite */
+    padding: 0 !important;
+    white-space: nowrap;
+    pointer-events: none; /* No bloquea los clics al mapa */
+}
+
+/* Ocultar la flechita del tooltip por defecto de Leaflet */
+.leaflet-tooltip.label-punto-mapa::before {
+    display: none;
+}
+/* ============================================================
+   MODO KERAUNOS: Emoji central sin rayo
+   ============================================================ */
+.modo-keraunos .al-icono {
+    font-size: 90px; /* Aumentar el tamaño para el emoji circular */
+    animation: al-icono-tilt 3s ease-in-out infinite; /* Mantener un pulso sutil */
+    /* Opcional: quitar la inclinación si prefieres que esté estático */
+    /* animation: none; */
+}
+
+/* Asegurar que el SVG del rayo no se muestre en modo Keraunos */
+.modo-keraunos .al-rayo-svg {
+    display: none !important;
+}

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Antamina · SARA</title>
+
+<link rel="stylesheet" href="style.css">
+
+<!-- CORREGIDO: rel="stylesheet" -->
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<link rel="stylesheet" href="notifications.css">
+<link rel="stylesheet" href="css/alerts.css">
+<link rel="stylesheet" href="css/panico.css">
+
+<link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="shortcut icon" href="./favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="manifest" href="./site.webmanifest">
+      
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- MAPA A PANTALLA COMPLETA -->
+    <main id="map-container">
+        <div id="map"></div>
+
+        <button
+            id="btn-ubicacion"
+            title="Mi ubicación"
+            aria-label="Mostrar mi ubicación">
+
+            <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                xmlns="http://www.w3.org/2000/svg">
+
+                <path
+                    fill="#4285f4"
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/>
+            </svg>
+
+        </button>
+
+    </main>
+
+
+    <!-- CABECERA -->
+    <section class="top-ui">
+
+        <div class="left-ui">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    ⚡
+                </div>
+
+                <div>
+                    <div class="brand-name">
+                        ANTAMINA
+                    </div>
+
+                    <div class="brand-subtitle">
+                        Keraunos
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- TARJETA INFERIOR -->
+    <section
+        class="info"
+        id="info-panel">
+
+        <div class="vigilance-kicker">
+            VIGILANCIA
+        </div>
+
+        <div
+            class="vigilance-meta"
+            id="info-content">
+
+            <div class="vigilance-line">
+
+                <span>🟢</span>
+
+                <span>
+                    <strong>Estado:</strong>
+                    Sin alertas meteorológicas
+                </span>
+
+            </div>
+
+            <div class="vigilance-line">
+
+                <span>📍</span>
+
+                <span>
+                    <strong>Sistema:</strong>
+                    En vigilancia
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer class="footer">
+        Antamina · Información meteorológica · 2026
+    </footer>
+
+</div>
+
+
+<!-- =========================================================
+     LIBRERÍAS EXTERNAS
+     ========================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
+<!-- =========================================================
+     MÓDULOS PRINCIPALES
+     ========================================================= -->
+<script src="./js/keraunos-config.js"></script>
+
+<!-- 1. App principal (Mapa y lógica) -->
+<script type="module" src="js/app.js"></script>
+
+<!-- 2. Botón de Pánico (SOS) - RECUPERADO -->
+<script type="module" src="js/panico.js"></script>
+
+<!-- Botón Volver al panel manual 
+<a href="./index.html" id="btn-volver-index" title="Volver al panel manual">
+    ← Volver al Panel Manual
+</a> -->
+
+<style>
+    /* Botón volver */
+    #btn-volver-index {
+        position: fixed;
+        bottom: calc(27px + 5px + env(safe-area-inset-bottom, 0px));
+        left: 10px;
+        z-index: 2000;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+
+        background: rgba(255, 255, 255, 0.95);
+        border: 1.5px solid #193344;
+        border-radius: 10px;
+        color: #193344;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: transform 0.15s, filter 0.2s;
+    }
+    #btn-volver-index:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+    #btn-volver-index:active {
+        transform: scale(0.97);
+    }
+
+    /* Ocultar buscador y resultados (Keraunos no los usa) */
+    .search-box,
+    #results,
+    #stats,
+    .filter-bar {
+        display: none !important;
+    }
+
+    @media (max-width: 600px) {
+        #btn-volver-index {
+            font-size: 11px;
+            padding: 7px 10px;
+        }
+    }
+</style>
+
+</body>
+
+</html>

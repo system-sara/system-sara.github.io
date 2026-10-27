@@ -1,0 +1,128 @@
+/* notifications.css
+   Estilos para los toasts/popups de notificación.
+   No afecta al resto del sitio. */
+
+/* Contenedor de toasts (esquina superior derecha, fijo) */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 360px;
+    pointer-events: none;
+}
+
+/* Toast individual */
+.toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    pointer-events: auto;
+    opacity: 0;
+    transform: translateX(120%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: default;
+}
+
+/* Animación de entrada */
+.toast-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Animación de salida */
+.toast-saliendo {
+    opacity: 0;
+    transform: translateX(120%);
+}
+
+/* Tipos de toast */
+.toast-info {
+    background: rgba(52, 152, 219, 0.92);
+    border-left: 4px solid #2980b9;
+}
+
+.toast-exito {
+    background: rgba(46, 204, 113, 0.92);
+    border-left: 4px solid #27ae60;
+}
+
+.toast-alerta {
+    background: rgba(231, 76, 60, 0.92);
+    border-left: 4px solid #c0392b;
+}
+
+/* Icono */
+.toast-icono {
+    font-size: 22px;
+    line-height: 1;
+    flex-shrink: 0;
+    padding-top: 1px;
+}
+
+/* Cuerpo del toast */
+.toast-cuerpo {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-titulo {
+    font-weight: 700;
+    margin-bottom: 2px;
+    font-size: 14px;
+}
+
+.toast-mensaje {
+    font-size: 13px;
+    opacity: 0.95;
+    word-wrap: break-word;
+}
+
+/* Botón cerrar */
+.toast-cerrar {
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.6;
+    flex-shrink: 0;
+    padding: 0 2px;
+    transition: opacity 0.2s;
+}
+
+.toast-cerrar:hover {
+    opacity: 1;
+}
+
+/* Responsive: en móvil, ocupar todo el ancho con margen */
+@media (max-width: 480px) {
+    #toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .toast {
+        transform: translateY(-120%);
+    }
+
+    .toast-visible {
+        transform: translateY(0);
+    }
+
+    .toast-saliendo {
+        transform: translateY(-120%);
+    }
+}

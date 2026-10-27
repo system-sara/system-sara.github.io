@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔔 Panel de Alertas — Antamina</title>
+<link rel="stylesheet" href="notifications.css">
+<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/alerts.css">
+<link rel="stylesheet" href="css/panico.css">
+<style>
+/* ============================================================
+   Panel de Alertas — estilos (prefijo "pa-")
+   ============================================================ */
+
+/* El panel de admin es más ancho que el de login */
+#panel-container.admin-panel-wide {
+    max-width: 720px;
+    width: 95vw;
+}
+
+/* ---------- Alertas activas ---------- */
+.pa-aa-section {
+    margin-bottom: 24px;
+}
+.pa-aa-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffb3a7;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+.pa-aa-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.pa-aa-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border-left: 5px solid #888;
+}
+.pa-aa-item.pa-nivel-amarilla { border-left-color: #f1c40f; background: rgba(241,196,15,0.07); }
+.pa-aa-item.pa-nivel-naranja  { border-left-color: #e67e22; background: rgba(230,126,34,0.08); }
+.pa-aa-item.pa-nivel-roja     { border-left-color: #e74c3c; background: rgba(231,76,60,0.10); }
+
+.pa-aa-icono { font-size: 22px; flex-shrink: 0; }
+.pa-aa-info { flex: 1; min-width: 0; }
+.pa-aa-nombre {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pa-aa-meta {
+    font-size: 12px;
+    color: rgba(255,255,255,0.65);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 3px;
+}
+.pa-aa-restante {
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    color: #7dffa3;
+    letter-spacing: 1px;
+}
+.pa-aa-restante.pa-critico {
+    color: #ff6b5b;
+    animation: pa-parpadeo 0.7s ease-in-out infinite;
+}
+@keyframes pa-parpadeo {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+}
+
+.pa-aa-btn-liberar {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(231,76,60,0.15);
+    border: 1.5px solid #e74c3c;
+    color: #ffb3a7;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.pa-aa-btn-liberar:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.pa-aa-btn-liberar-todas {
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    background: rgba(231,76,60,0.15);
+    border: 2px solid #e74c3c;
+    color: #ffb3a7;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    margin-top: 6px;
+}
+.pa-aa-btn-liberar-todas:hover {
+    background: #e74c3c;
+    color: #fff;
+}
+
+/* ---------- Nueva alerta por sector ---------- */
+.pa-na-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffd75e;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+}
+.pa-na-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.pa-na-card {
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.035);
+    border: 2px solid rgba(255,255,255,0.09);
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+}
+.pa-na-card.pa-activa-amarilla { border-color: #f1c40f; background: rgba(241,196,15,0.07); }
+.pa-na-card.pa-activa-naranja  { border-color: #e67e22; background: rgba(230,126,34,0.08); }
+.pa-na-card.pa-activa-roja     { border-color: #e74c3c; background: rgba(231,76,60,0.09); }
+.pa-na-card.pa-ultima-tocada {
+    box-shadow: 0 0 0 3px rgba(255,215,94,0.35);
+}
+
+.pa-na-row1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.pa-na-check {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #fff;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.pa-na-check:hover { border-color: #fff; }
+.pa-na-check.pa-on {
+    background: #fff;
+    color: #1a1a1a;
+    border-color: #fff;
+}
+
+.pa-na-nombre {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.pa-na-shortcut {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    background: rgba(0,0,0,0.35);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    flex-shrink: 0;
+}
+
+.pa-na-row2 {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.pa-pill-group {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+.pa-pill {
+    flex: 1;
+    min-width: 70px;
+    padding: 9px 6px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.65);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    font-family: inherit;
+}
+.pa-pill:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.4);
+}
+.pa-pill.pa-sel-amarilla {
+    background: #f1c40f;
+    color: #2b2b00;
+    border-color: #f1c40f;
+}
+.pa-pill.pa-sel-naranja {
+    background: #e67e22;
+    color: #fff;
+    border-color: #e67e22;
+}
+.pa-pill.pa-sel-roja {
+    background: #e74c3c;
+    color: #fff;
+    border-color: #e74c3c;
+}
+
+.pa-duracion-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,0,0,0.35);
+    border: 2px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 0 10px;
+    height: 38px;
+}
+.pa-duracion-wrap.pa-disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+.pa-duracion-wrap input {
+    width: 46px;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    font-family: inherit;
+    padding: 0;
+}
+.pa-duracion-wrap input:focus { outline: none; }
+.pa-duracion-wrap span {
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+/* ---------- Resumen ---------- */
+.pa-resumen {
+    margin: 10px 0 18px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border-left: 3px solid #ffd75e;
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.55;
+    display: none;
+}
+.pa-resumen.pa-visible { display: block; }
+.pa-resumen strong { color: #fff; }
+
+/* ---------- Botón enviar grande ---------- */
+.pa-btn-enviar {
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(231,76,60,0.4);
+    transition: transform 0.15s, filter 0.2s, box-shadow 0.2s;
+    margin-bottom: 20px;
+}
+.pa-btn-enviar:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(231,76,60,0.5);
+}
+.pa-btn-enviar:active:not(:disabled) { transform: scale(0.98); }
+.pa-btn-enviar:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+    box-shadow: none;
+}
+
+/* ---------- Mensaje informativo colapsable ---------- */
+.pa-mi-section {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 14px;
+}
+.pa-mi-toggle {
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+.pa-mi-toggle:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.35);
+}
+.pa-mi-campos {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.2);
+}
+
+/* ---------- Modales ---------- */
+.pa-modal-msg-lista {
+    margin: 14px 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+    font-size: 13px;
+    line-height: 1.7;
+    text-align: left;
+    max-height: 200px;
+    overflow-y: auto;
+}
+.pa-modal-peligro .modal-box {
+    border: 2px solid #e74c3c;
+    box-shadow: 0 0 40px rgba(231,76,60,0.5);
+}
+.pa-modal-peligro .modal-icon { font-size: 42px; }
+.pa-modal-peligro h3 {
+    color: #ff8c7a;
+    font-size: 18px;
+    letter-spacing: 1px;
+}
+.pa-btn-peligro {
+    background: #e74c3c !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    border: 2px solid #fff !important;
+}
+.pa-btn-peligro:hover { filter: brightness(1.15); }
+
+/* ---------- Utilidades ---------- */
+.pa-hidden { display: none !important; }
+
+@media (max-width: 560px) {
+    #panel-container.admin-panel-wide { max-width: 100%; }
+    .pa-na-row2 { flex-direction: column; align-items: stretch; }
+    .pa-pill-group { width: 100%; }
+    .pa-pill { min-width: 0; padding: 9px 4px; font-size: 11px; }
+    .pa-duracion-wrap { justify-content: center; }
+    .pa-aa-item { flex-direction: column; align-items: flex-start; }
+    .pa-aa-btn-liberar { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     Login
+     ============================================ -->
+<div class="admin-container" id="login-container">
+
+    <div class="admin-header">
+        <h1><span class="icon">🔒</span> Iniciar sesión</h1>
+        <p>Acceso solo para administradores</p>
+    </div>
+
+    <form id="form-login" autocomplete="off">
+        <div class="form-group">
+            <label for="login-email">👤 Correo</label>
+            <input type="email" id="login-email" placeholder="tu-correo@ejemplo.com"
+                   autocomplete="username" required>
+        </div>
+
+        <div class="form-group">
+            <label for="login-password">🔑 Contraseña</label>
+            <input type="password" id="login-password" placeholder="••••••••"
+                   autocomplete="current-password" required>
+        </div>
+
+        <div class="button-group">
+            <button type="submit" class="btn btn-enviar" id="btn-login">
+                🔓 Ingresar
+            </button>
+        </div>
+    </form>
+
+    <div class="status-bar" id="login-status"></div>
+</div>
+
+<!-- ============================================
+     Panel de alertas (post-login)
+     ============================================ -->
+<div class="admin-container admin-panel-wide" id="panel-container" style="display:none;">
+
+    <div class="admin-header">
+        <h1><span class="icon">🔔</span> Panel de Alertas</h1>
+        <p>Configura y envía alertas meteorológicas por sector</p>
+        <button type="button" class="btn btn-cancelar" id="btn-logout" style="margin-top:12px;">
+            🚪 Cerrar sesión
+        </button>
+    </div>
+
+    <!-- Sección: Alertas activas -->
+    <section class="pa-aa-section" id="pa-aa-section" style="display:none;">
+        <div class="pa-aa-titulo">🚨 ALERTAS ACTIVAS <span id="pa-aa-count">(0)</span></div>
+        <div class="pa-aa-lista" id="pa-aa-lista"></div>
+        <button type="button" class="pa-aa-btn-liberar-todas" id="pa-btn-liberar-todas">
+            🛑 LIBERAR TODAS LAS ALERTAS
+        </button>
+    </section>
+
+    <!-- Sección: Nueva alerta por sector -->
+    <section>
+        <div class="pa-na-titulo">⚡ NUEVA ALERTA POR SECTOR</div>
+        <div class="pa-na-lista" id="pa-na-lista"></div>
+    </section>
+
+    <!-- Resumen -->
+    <div class="pa-resumen" id="pa-resumen"></div>
+
+    <!-- Botón enviar -->
+    <button type="button" class="pa-btn-enviar" id="pa-btn-enviar" disabled>
+        📤 ENVIAR ALERTAS
+    </button>
+
+    <!-- Mensaje informativo colapsable -->
+    <section class="pa-mi-section">
+        <button type="button" class="pa-mi-toggle" id="pa-mi-toggle">
+            ▸ 💬 Mensaje informativo (opcional)
+        </button>
+        <div class="pa-mi-campos" id="pa-mi-campos" style="display:none;">
+            <div class="form-group">
+                <label for="titulo">📋 Título</label>
+                <input type="text" id="titulo" maxlength="100"
+                       placeholder="Escribe el título...">
+            </div>
+            <div class="form-group">
+                <label for="cuerpo">💬 Mensaje</label>
+                <textarea id="cuerpo" maxlength="500" rows="3"
+                          placeholder="Contenido del mensaje..."></textarea>
+                <div class="char-counter" id="char-counter">0 / 500</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Barra de estado -->
+    <div class="status-bar" id="status-bar"></div>
+</div>
+
+<!-- ============================================
+     Modal genérico
+     ============================================ -->
+<div class="modal-overlay" id="modal-confirm">
+    <div class="modal-box" id="modal-box">
+        <div class="modal-icon" id="modal-icon">❓</div>
+        <h3 id="modal-titulo">¿Confirmar?</h3>
+        <div id="modal-mensaje" class="pa-modal-msg-lista"></div>
+        <div class="modal-buttons">
+            <button type="button" class="btn btn-cancelar" id="modal-btn-cancelar">
+                ✖ Cancelar
+            </button>
+            <button type="button" class="btn btn-enviar" id="modal-btn-aceptar">
+                ✅ Aceptar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="js/admin.js"></script>
+<script type="module" src="js/panico-admin.js"></script>
+</body>
+</html>

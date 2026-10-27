@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Antamina · SARA</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<link rel="stylesheet" href="notifications.css">
+
+<link rel="stylesheet" href="css/alerts.css">
+<link rel="stylesheet" href="css/panico.css">
+
+<link rel="icon" type="image/png" href="./favicon-96x96.png" sizes="96x96">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="shortcut icon" href="./favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="manifest" href="./site.webmanifest">
+      
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- MAPA A PANTALLA COMPLETA -->
+    <main id="map-container">
+        <div id="map"></div>
+
+        <button
+            id="btn-ubicacion"
+            title="Mi ubicación"
+            aria-label="Mostrar mi ubicación">
+
+            <svg
+                viewBox="0 0 24 24"
+                width="22"
+                height="22"
+                xmlns="http://www.w3.org/2000/svg">
+
+                <path
+                    fill="#4285f4"
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"/>
+            </svg>
+
+        </button>
+
+    </main>
+
+
+    <!-- CABECERA -->
+    <section class="top-ui">
+
+        <div class="left-ui">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    ⚡
+                </div>
+
+                <div>
+                    <div class="brand-name">
+                        ANTAMINA
+                    </div>
+
+                    <div class="brand-subtitle">
+                        Strike Guard
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- BUSCADOR (Oculto manteniendo espacio) -->
+            <div class="search-box" style="visibility: hidden;">
+
+                <span class="search-icon">
+                    ⌕
+                </span>
+
+                <input
+                    id="search"
+                    type="search"
+                    placeholder="Buscar lugar..."
+                    autocomplete="off">
+
+            </div>
+
+
+            <!-- RESULTADOS DEL BUSCADOR -->
+            <div id="results"></div>
+
+            <div id="stats">
+                Cargando lugares...
+            </div>
+
+
+            <!-- ============================================
+                 FILTROS UNIFICADOS (Oculto manteniendo espacio)
+                 ============================================ -->
+            <div class="filter-bar" style="visibility: hidden;">
+
+                <div class="type-filter" id="type-filter">
+                    <button class="type-btn active" data-type="all">Todo</button>
+                    <button class="type-btn" data-type="Point">Puntos</button>
+                    <button class="type-btn" data-type="Polygon">Polígonos</button>
+                    <button class="type-btn" data-type="LineString">Rutas</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="folder-filter">
+                    <select id="folder-select" aria-label="Filtrar por carpeta">
+                        <option value="__all__">Todas</option>
+                    </select>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- TARJETA INFERIOR -->
+    <section
+        class="info"
+        id="info-panel">
+
+        <div class="vigilance-kicker">
+            VIGILANCIA
+        </div>
+
+        <div
+            class="vigilance-meta"
+            id="info-content">
+
+            <div class="vigilance-line">
+
+                <span>🟢</span>
+
+                <span>
+                    <strong>Estado:</strong>
+                    Sin alertas meteorológicas
+                </span>
+
+            </div>
+
+            <div class="vigilance-line">
+
+                <span>📍</span>
+
+                <span>
+                    <strong>Sistema:</strong>
+                    En vigilancia
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- SE CONSERVA PARA TU JS DE ALERTAS -->
+        <button
+            id="btn-test-alerta"
+            type="button"
+            class="hidden-alert-trigger">
+
+            Consultar alerta meteorológica
+
+        </button>
+
+    </section>
+
+
+    <footer class="footer">
+        Antamina · Información meteorológica · 2026
+    </footer>
+
+</div>
+
+
+<!-- =========================================================
+     LIBRERÍAS EXTERNAS (deben cargar ANTES de js/app.js)
+     ========================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
+<!-- =========================================================
+     MÓDULO PRINCIPAL (al final, cuando todo lo demás existe)
+     ========================================================= -->
+<!-- Configuración de la página (debe cargarse ANTES que app.js) -->
+<script src="./js/index-config.js"></script>
+
+<script type="module" src="js/app.js"></script>
+<!-- Botón de Pánico (SOS) -->
+<script type="module" src="js/panico.js"></script>
+<!-- Botón Consultar Keraunos (abajo-izquierda) -->
+<a href="./keraunos.html" id="btn-consultar-keraunos" title="Consultar Keraunos">
+    🛰️ Consultar Keraunos
+</a>
+
+<style>
+    #btn-consultar-keraunos {
+        position: fixed;
+        bottom: calc(27px + 5px + env(safe-area-inset-bottom, 0px));
+        left: 10px;
+        z-index: 2000;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+
+        background: rgba(255, 255, 255, 0.95);
+        border: 1.5px solid #193344;
+        border-radius: 10px;
+        color: #193344;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        cursor: pointer;
+        transition: transform 0.15s, filter 0.2s;
+    }
+    #btn-consultar-keraunos:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.05);
+    }
+    #btn-consultar-keraunos:active {
+        transform: scale(0.97);
+    }
+    @media (max-width: 600px) {
+        #btn-consultar-keraunos {
+            font-size: 11px;
+            padding: 7px 10px;
+        }
+    }
+</style>
+</body>
+
+</html>

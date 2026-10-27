@@ -1,0 +1,278 @@
+// js/estado-cliente.js
+// ============================================================
+// Puente estado.json ↔ sistema de alertas (v4)
+// ------------------------------------------------------------
+// v4 (fix): detecta cuando Keraunos EXTIENDE o ACORTA la duración
+//           de una alerta en curso (cambia `duracionMin`) aunque
+//           el `timestampInicio` y el nivel no cambien. Antes, ese
+//           cambio se ignoraba y el frontend quedaba con los
+//           tiempos viejos.
+//
+// v3 (mantenido): primera carga siempre reconstruye el estado
+//                 del mapa (ignora el historial tras recargar).
+// ============================================================
+
+import { mostrarAlertaCompleta, mostrarAlertaLibre, quitarAlerta } from "./alertas.js";
+
+const ESTADO_URL    = "./estado.json";
+const INTERVALO_MS  = 30_000;
+const STORAGE_KEY   = "keraunos_estado_cliente_v2";
+const MAX_HISTORIAL = 200;
+
+const cliente = {
+    modo: null,
+    intervaloId: null,
+    historial: {},
+    zonasVistas: new Set(),
+    cargado: false
+};
+
+// FIX v3: primera carga tras recargar la página
+let primeraCarga = true;
+
+function cargarHistorial() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { historial: {}, zonas: [] };
+        const parsed = JSON.parse(raw);
+        return {
+            historial: parsed.historial || {},
+            zonas: parsed.zonas || []
+        };
+    } catch {
+        return { historial: {}, zonas: [] };
+    }
+}
+
+function guardarHistorial(historial, zonas) {
+    try {
+        const claves = Object.keys(historial);
+        if (claves.length > MAX_HISTORIAL) {
+            const recortadas = claves.slice(-MAX_HISTORIAL);
+            const nuevo = {};
+            recortadas.forEach(k => nuevo[k] = historial[k]);
+            historial = nuevo;
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            historial,
+            zonas: Array.from(zonas)
+        }));
+    } catch {}
+}
+
+function claveAlerta(a) {
+    return `${a.distrito}::${a.timestampInicio}`;
+}
+
+async function leerEstado() {
+    const url = `${ESTADO_URL}?t=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return res.json();
+}
+
+async function enviarAlertaFirestore(alerta) {
+    const { enviarMensajePush } = await import("./mensajes.js");
+    const datosAlerta = {
+        tipo:            "alerta",
+        nivel:           alerta.nivel,
+        distrito:        alerta.distrito,
+        lat:             alerta.lat,
+        lng:             alerta.lng,
+        duracionMin:     alerta.duracionMin,
+        timestampInicio: alerta.timestampInicio,
+        sectorOriginal:  alerta.sectorOriginal,
+        inicio:          alerta.inicio,
+        fin:             alerta.fin
+    };
+    await enviarMensajePush(
+        alerta.titulo || `⚡ ALERTA ${alerta.nivel.toUpperCase()} — ${alerta.distrito}`,
+        alerta.mensaje || `Actividad eléctrica detectada en ${alerta.distrito}.`,
+        datosAlerta
+    );
+}
+
+async function enviarResolucionFirestore(distrito) {
+    const { enviarMensajePush } = await import("./mensajes.js");
+    await enviarMensajePush(
+        `✅ Alerta finalizada — ${distrito}`,
+        `La alerta meteorológica en ${distrito} ha finalizado.`,
+        { tipo: "alerta-resuelta", distrito }
+    );
+}
+
+async function ciclo() {
+    let data;
+    try {
+        data = await leerEstado();
+    } catch (e) {
+        console.warn("estado-cliente: no se pudo leer estado.json:", e.message);
+        return;
+    }
+
+    const alertas = Array.isArray(data.alertas) ? data.alertas : [];
+
+    const { historial, zonas } = cargarHistorial();
+    const zonasVistas = new Set(zonas);
+
+    const distritosActuales = new Set();
+
+    // --------------------------------------------------------
+    // FASE 1 — Detectar alertas NUEVAS o ACTUALIZADAS
+    // Dispara si:
+    //   - primeraCarga (reconstrucción tras recargar)
+    //   - alerta nueva (no está en el historial)
+    //   - cambió el nivel (F3)
+    //   - cambió el timestampInicio (F3, evento nuevo)
+    //   - cambió la duración (FIX v4, Keraunos extendió/acortó)
+    // --------------------------------------------------------
+    for (const a of alertas) {
+        if (a.nivel !== "amarilla" && a.nivel !== "naranja" && a.nivel !== "roja") continue;
+        if (!a.distrito) continue;
+
+        distritosActuales.add(a.distrito);
+
+        const clave = claveAlerta(a);
+        const anterior = historial[clave];
+
+        const cambioNivel     = anterior && anterior.nivel !== a.nivel;
+        const cambioTimestamp = anterior && anterior.timestampInicio !== a.timestampInicio;
+        const cambioDuracion  = anterior && anterior.duracionMin !== a.duracionMin;
+
+        const esNueva = primeraCarga || !anterior || cambioNivel || cambioTimestamp || cambioDuracion;
+
+        if (esNueva) {
+            // Registrar el estado actual (incluye duracionMin para
+            // poder detectar extensiones de la alerta)
+            historial[clave] = {
+                nivel: a.nivel,
+                timestampInicio: a.timestampInicio,
+                duracionMin: a.duracionMin,
+                distrito: a.distrito
+            };
+            zonasVistas.add(a.distrito);
+
+            if (cambioDuracion) {
+                console.log(
+                    `[estado-cliente] duración cambiada en ${a.distrito}: ` +
+                    `${anterior.duracionMin} → ${a.duracionMin} min`
+                );
+            }
+
+            if (cliente.modo === "admin") {
+                try {
+                    await enviarAlertaFirestore(a);
+                    try {
+                        const { mostrarToast } = await import("./notifications.js");
+                        mostrarToast(
+                            "🤖 Alerta automática enviada",
+                            `${a.distrito} · ${a.nivel.toUpperCase()}`,
+                            "exito",
+                            false
+                        );
+                    } catch {}
+                } catch (e) {
+                    console.error("estado-cliente: error enviando a Firestore:", e);
+                }
+            } else if (cliente.modo === "index") {
+                try {
+                    await mostrarAlertaCompleta({
+                        tipo:            "alerta",
+                        nivel:           a.nivel,
+                        titulo:          a.titulo,
+                        mensaje:         a.mensaje,
+                        distrito:        a.distrito,
+                        lat:             a.lat,
+                        lng:             a.lng,
+                        duracionMin:     a.duracionMin,
+                        timestampInicio: a.timestampInicio,
+                        sectorOriginal:  a.sectorOriginal,
+                        inicio:          a.inicio,
+                        fin:             a.fin
+                    });
+                } catch (e) {
+                    console.error("estado-cliente: error mostrando alerta:", e);
+                }
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // FASE 2 — Detectar alertas RESUELTAS
+    // --------------------------------------------------------
+    const distritosResueltos = [];
+    for (const distritoAnterior of zonasVistas) {
+        if (!distritosActuales.has(distritoAnterior)) {
+            distritosResueltos.push(distritoAnterior);
+        }
+    }
+
+    for (const distrito of distritosResueltos) {
+        zonasVistas.delete(distrito);
+
+        if (cliente.modo === "admin") {
+            try {
+                await enviarResolucionFirestore(distrito);
+                try {
+                    const { mostrarToast } = await import("./notifications.js");
+                    mostrarToast("✅ Alerta finalizada", distrito, "info", false);
+                } catch {}
+            } catch (e) {
+                console.error("estado-cliente: error enviando resolución:", e);
+            }
+        } else if (cliente.modo === "index") {
+            try {
+                await quitarAlerta(distrito);
+            } catch (e) {
+                console.error("estado-cliente: error quitando alerta:", e);
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // FASE 3 — Si no hay ninguna zona activa, mostrar libre
+    // --------------------------------------------------------
+    if (cliente.modo === "index" &&
+        distritosActuales.size === 0 &&
+        zonasVistas.size === 0 &&
+        !cliente.cargado) {
+        try { await mostrarAlertaLibre(); } catch {}
+        cliente.cargado = true;
+    }
+
+    // FIX v3: marcar primera carga como completada
+    if (primeraCarga) primeraCarga = false;
+
+    guardarHistorial(historial, zonasVistas);
+}
+
+export function iniciarEstadoCliente(opciones = {}) {
+    if (cliente.intervaloId !== null) return;
+
+    cliente.modo = opciones.modo || "index";
+    console.log(`estado-cliente: iniciado en modo "${cliente.modo}" (${INTERVALO_MS / 1000}s)`);
+
+    // FIX v3: forzar primera carga
+    primeraCarga = true;
+
+    ciclo();
+    cliente.intervaloId = setInterval(ciclo, INTERVALO_MS);
+}
+
+export function detenerEstadoCliente() {
+    if (cliente.intervaloId !== null) {
+        clearInterval(cliente.intervaloId);
+        cliente.intervaloId = null;
+    }
+}
+
+export function resetearHistorial() {
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+        cliente.historial = {};
+        cliente.zonasVistas = new Set();
+        cliente.cargado = false;
+        primeraCarga = true;
+        console.log("estado-cliente: historial reseteado");
+    } catch {}
+}

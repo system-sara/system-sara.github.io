@@ -1,0 +1,458 @@
+/* css/panico.css
+   ============================================================
+   Botón de pánico + modal + tarjetas flotantes en admin
+   v2: botón SOS reposicionado debajo del botón de ubicación
+   ============================================================ */
+
+/* ============================================================
+   BOTÓN SOS (index.html)
+   ------------------------------------------------------------
+   #btn-ubicacion está en:
+       right: 10px; top: 52%;  width/height: 36px;
+   => #btn-panico queda justo debajo:
+       right: 10px; top: calc(52% + 42px);  (36px + 6px gap)
+   ============================================================ */
+#btn-panico {
+    position: fixed;
+    right: 10px;
+    top: calc(52% + 42px);   /* 36px (alto del btn-ubicacion) + 6px de separación */
+    z-index: 700;
+
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 0;
+
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    cursor: pointer;
+
+    display: grid;
+    place-items: center;
+
+    box-shadow:
+        0 2px 10px rgba(231,76,60,0.35),
+        0 0 0 0 rgba(231,76,60,0.7);
+
+    /* Refuerzos táctiles para móvil */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+
+    transition: transform 0.15s ease, box-shadow 0.2s;
+    animation: panico-pulso 2s ease-in-out infinite;
+}
+
+#btn-panico:hover { transform: scale(1.06); }
+#btn-panico:active { transform: scale(0.94); }
+
+.panico-btn-emoji {
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: none;   /* el emoji no captura el click */
+}
+
+@keyframes panico-pulso {
+    0%, 100% {
+        box-shadow:
+            0 2px 10px rgba(231,76,60,0.35),
+            0 0 0 0 rgba(231,76,60,0.7);
+    }
+    50% {
+        box-shadow:
+            0 2px 10px rgba(231,76,60,0.35),
+            0 0 0 10px rgba(231,76,60,0);
+    }
+}
+
+/* -------- OVERLAY + MODAL -------- */
+.panico-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+.panico-overlay.panico-visible {
+    display: flex;
+    opacity: 1;
+}
+
+.panico-modal {
+    width: min(92vw, 460px);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #1c1c20;
+    color: #fff;
+    border-radius: 16px;
+    padding: 26px 22px 22px;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    border: 2px solid #e74c3c;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(231, 76, 60, 0.4);
+    position: relative;
+    transform: scale(0.94);
+    transition: transform 0.3s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+.panico-overlay.panico-visible .panico-modal { transform: scale(1); }
+
+.panico-cerrar {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+}
+.panico-cerrar:hover { color: #fff; }
+
+.panico-titulo {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    text-align: center;
+}
+.panico-subtitulo {
+    font-size: 13px;
+    opacity: 0.75;
+    text-align: center;
+    margin: 0 0 18px;
+}
+
+.panico-campo {
+    margin-bottom: 14px;
+}
+.panico-campo label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    opacity: 0.9;
+}
+.panico-campo input,
+.panico-campo textarea {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+.panico-campo input:focus,
+.panico-campo textarea:focus {
+    outline: none;
+    border-color: #e74c3c;
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.panico-gps {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    font-size: 13px;
+    margin-bottom: 18px;
+    transition: background 0.3s, border-color 0.3s;
+}
+.panico-gps-ok {
+    background: rgba(46, 204, 113, 0.12);
+    border-color: rgba(46, 204, 113, 0.5);
+    color: #a8e6c4;
+}
+.panico-gps-error {
+    background: rgba(231, 76, 60, 0.12);
+    border-color: rgba(231, 76, 60, 0.5);
+    color: #f5b7b1;
+}
+
+.panico-btn-enviar {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(231, 76, 60, 0.4);
+    transition: transform 0.15s, filter 0.2s;
+    animation: panico-btn-latido 1.6s ease-in-out infinite;
+}
+.panico-btn-enviar:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.panico-btn-enviar:active { transform: scale(0.97); }
+.panico-btn-enviar:disabled { opacity: 0.6; cursor: wait; animation: none; }
+
+@keyframes panico-btn-latido {
+    0%, 100% { box-shadow: 0 6px 18px rgba(231,76,60,0.4); }
+    50%      { box-shadow: 0 6px 24px rgba(231,76,60,0.7), 0 0 0 6px rgba(231,76,60,0.15); }
+}
+
+.panico-nota {
+    font-size: 11px;
+    opacity: 0.55;
+    text-align: center;
+    margin: 12px 0 0;
+}
+
+/* -------- TARJETAS EN ADMIN.HTML -------- */
+#panico-admin-contenedor {
+    position: fixed;
+    top: 90px;
+    right: 16px;
+    z-index: 50000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 340px;
+    pointer-events: none;
+}
+
+.panico-card {
+    pointer-events: auto;
+    background: linear-gradient(135deg, #2b1210 0%, #4a1a17 100%);
+    border: 2px solid #e74c3c;
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5),
+                0 0 30px rgba(231, 76, 60, 0.35);
+    animation: panico-card-in 0.4s cubic-bezier(0.22, 1.2, 0.36, 1),
+               panico-card-pulso 2s ease-in-out infinite;
+}
+
+@keyframes panico-card-in {
+    from { opacity: 0; transform: translateX(60px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes panico-card-pulso {
+    0%, 100% { border-color: #e74c3c; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 30px rgba(231,76,60,0.35); }
+    50%      { border-color: #ff6b5b; box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 40px rgba(231,76,60,0.7); }
+}
+
+.panico-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    position: relative;
+}
+.panico-card-icono { font-size: 24px; }
+.panico-card-sub {
+    font-size: 10px;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: #ff8c7a;
+}
+.panico-card-hora { font-size: 11px; opacity: 0.75; }
+
+.panico-card-cerrar {
+    position: absolute;
+    top: -6px;
+    right: -4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.panico-card-body p {
+    margin: 4px 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+}
+.panico-card-body strong { color: #ffb3a7; }
+
+.panico-card-acciones {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.panico-card-btn-mapa,
+.panico-card-btn-atender {
+    flex: 1;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.2s, transform 0.15s;
+}
+.panico-card-btn-mapa {
+    background: #e74c3c;
+    color: #fff;
+}
+.panico-card-btn-atender {
+    background: #2ecc71;
+    color: #08301a;
+}
+.panico-card-btn-mapa:hover,
+.panico-card-btn-atender:hover { filter: brightness(1.12); }
+.panico-card-btn-mapa:active,
+.panico-card-btn-atender:active { transform: scale(0.97); }
+
+/* ============================================================
+   CONFIRMACIÓN "AYUDA ENVIADA" — persistente 60 s, local
+   ============================================================ */
+.panico-confirm {
+    position: fixed;
+    bottom: 90px;
+    right: 20px;
+    width: 280px;
+    max-width: calc(100vw - 40px);
+    padding: 14px 16px 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1a4d2e 0%, #0d3520 100%);
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    border-left: 5px solid #2ecc71;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4), 0 0 25px rgba(46,204,113,0.4);
+    z-index: 40000;
+    animation: panico-confirm-in 0.45s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@keyframes panico-confirm-in {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.panico-confirm.panico-confirm-out {
+    animation: panico-confirm-out 0.4s ease forwards;
+}
+
+@keyframes panico-confirm-out {
+    to { opacity: 0; transform: translateY(20px); }
+}
+
+.panico-confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.panico-confirm-icono {
+    font-size: 26px;
+    line-height: 1;
+    filter: drop-shadow(0 0 10px rgba(46,204,113,0.7));
+}
+
+.panico-confirm-titulo {
+    font-size: 15px;
+    font-weight: 700;
+    color: #a8e6c4;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.panico-confirm-sub {
+    font-size: 11px;
+    color: #c8f0d4;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+.panico-confirm-countdown {
+    font-size: 11px;
+    color: #8fd9a8;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(46,204,113,0.25);
+    text-align: center;
+    opacity: 0.85;
+}
+
+.panico-confirm-countdown strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+.panico-confirm-cerrar {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.panico-confirm-cerrar:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Pantallas grandes (>=700px): el btn-ubicacion se mueve a right: 18px
+   desde style.css, así que alineamos el SOS con el mismo margen. */
+@media (min-width: 700px) {
+    #btn-panico {
+        right: 18px;
+        top: calc(52% + 42px);
+    }
+}
+
+/* Móvil (<=600px): mantenemos alineación exacta con btn-ubicacion */
+@media (max-width: 600px) {
+    #btn-panico {
+        right: 10px;
+        top: calc(52% + 42px);
+    }
+
+    #panico-admin-contenedor {
+        top: 70px;
+        right: 8px;
+        left: 8px;
+        max-width: none;
+    }
+
+    .panico-confirm {
+        bottom: 80px;
+        right: 10px;
+        width: calc(100vw - 20px);
+        max-width: 340px;
+    }
+}

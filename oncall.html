@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control y Directorio Antamina - 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-600 text-white p-2.5 rounded-xl shadow-lg">
+                    <i class="fa-solid fa-hard-hat text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">ANTAMINA - Panel de Control & Directorio</h1>
+                    <p class="text-xs text-slate-400">Firmas Autorizadas 2026 | Portafolio | On Call & Roster</p>
+                </div>
+            </div>
+            <div class="w-full md:w-96 relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                    <i class="fa-solid fa-search"></i>
+                </span>
+                <input type="text" id="searchInput" onkeyup="filterData()" placeholder="Buscar por nombre, cargo, área o teléfono..." class="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-red-500 transition">
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Dashboard Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Firmas Autorizadas</p>
+                        <h3 class="text-2xl font-bold mt-1 text-red-400">146</h3>
+                    </div>
+                    <div class="bg-red-500/10 text-red-400 p-3 rounded-xl"><i class="fa-solid fa-file-signature text-xl"></i></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Portafolio / Proyectos</p>
+                        <h3 class="text-2xl font-bold mt-1 text-blue-400">Activo</h3>
+                    </div>
+                    <div class="bg-blue-500/10 text-blue-400 p-3 rounded-xl"><i class="fa-solid fa-diagram-project text-xl"></i></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Guardia On Call</p>
+                        <h3 class="text-2xl font-bold mt-1 text-emerald-400">Sem. Actual</h3>
+                    </div>
+                    <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-xl"><i class="fa-solid fa-calendar-days text-xl"></i></div>
+                </div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-xs text-slate-400 uppercase font-semibold">Central Emergencia</p>
+                        <h3 class="text-2xl font-bold mt-1 text-amber-400">Canal 1 / 3800</h3>
+                    </div>
+                    <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl"><i class="fa-solid fa-phone-volume text-xl"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Tabs -->
+        <div class="flex space-x-2 border-b border-slate-700 mb-6 overflow-x-auto">
+            <button onclick="switchTab('firmas')" id="btn-firmas" class="tab-btn px-5 py-2.5 font-medium text-sm border-b-2 border-red-500 text-white whitespace-nowrap transition">Firmas Autorizadas (2026)</button>
+            <button onclick="switchTab('oncall')" id="btn-oncall" class="tab-btn px-5 py-2.5 font-medium text-sm border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap transition">On Call & Roster</button>
+            <button onclick="switchTab('emergencias')" id="btn-emergencias" class="tab-btn px-5 py-2.5 font-medium text-sm border-b-2 border-transparent text-slate-400 hover:text-white whitespace-nowrap transition">Anexos y Emergencias</button>
+        </div>
+
+        <!-- Tab 1: Firmas Autorizadas -->
+        <div id="tab-firmas" class="tab-content">
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow overflow-hidden">
+                <div class="p-4 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
+                    <h3 class="font-semibold text-lg"><i class="fa-solid fa-users text-red-500 mr-2"></i> Directorio de Firmas Autorizadas y Responsables</h3>
+                    <span class="text-xs bg-slate-700 px-3 py-1 rounded-full text-slate-300">Total: <span id="countFirmas">0</span> registros</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse" id="tableFirmas">
+                        <thead>
+                            <tr class="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                                <th class="p-4">Área / Gerencia</th>
+                                <th class="p-4">Responsable</th>
+                                <th class="p-4">Cargo</th>
+                                <th class="p-4">Observaciones / Restricciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyFirmas" class="divide-y divide-slate-700 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: On Call & Roster -->
+        <div id="tab-oncall" class="tab-content hidden">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow">
+                    <h3 class="font-semibold text-lg mb-4 text-emerald-400"><i class="fa-solid fa-calendar-check mr-2"></i> Personal On Call (30 Set - 06 Oct)</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Mantenimiento Senior:</span> Saúl Gutierrez / Juan Gamboa</div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">939179954</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Mantenimiento Mina:</span> Miguel Campos</div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">975473363</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Mantenimiento Concentradora:</span> Jhonni Gonzales / José Barriga</div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">958020187</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Gerencia On Call:</span> Patricia Medina Alegría</div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">987352035</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Chancado y Concentradora:</span> Henry Pérez</div>
+                            <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg">943771982</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow">
+                    <h3 class="font-semibold text-lg mb-4 text-blue-400"><i class="fa-solid fa-list-check mr-2"></i> Roster y Supervisores de Guardia</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Relaciones Comunitarias (Huarmey):</span> Marco Dulanto</div>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg">998 910 135</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Legal:</span> Vania Goyzueta</div>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg">945 714 420</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Gestión Social:</span> Carlos Abanto</div>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg">995 761 339</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Tierras y Reasentamiento:</span> Juan Erazo</div>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg">917 528 328</span>
+                        </div>
+                        <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700 flex justify-between items-center">
+                            <div><span class="font-semibold text-white">Transporte y Campamento:</span> Silvio Jara</div>
+                            <span class="text-xs bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-lg">999 982 364</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Emergencias -->
+        <div id="tab-emergencias" class="tab-content hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 text-center shadow">
+                    <div class="bg-red-500/10 text-red-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fa-solid fa-tower-broadcast"></i></div>
+                    <h4 class="font-semibold text-lg">Yanacancha</h4>
+                    <p class="text-xs text-slate-400 mt-1">Canal 1</p>
+                    <p class="text-xl font-bold text-red-400 mt-3">Anexo 3800</p>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 text-center shadow">
+                    <div class="bg-blue-500/10 text-blue-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fa-solid fa-water"></i></div>
+                    <h4 class="font-semibold text-lg">Huarmey</h4>
+                    <p class="text-xs text-slate-400 mt-1">Canal 1</p>
+                    <p class="text-xl font-bold text-blue-400 mt-3">Anexo 3344</p>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 text-center shadow">
+                    <div class="bg-emerald-500/10 text-emerald-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fa-solid fa-city"></i></div>
+                    <h4 class="font-semibold text-lg">Lima</h4>
+                    <p class="text-xs text-slate-400 mt-1">Canal 1</p>
+                    <p class="text-xl font-bold text-emerald-400 mt-3">Anexo 3052</p>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 text-center shadow">
+                    <div class="bg-amber-500/10 text-amber-500 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fa-solid fa-house-chimney"></i></div>
+                    <h4 class="font-semibold text-lg">Casa Blanca</h4>
+                    <p class="text-xs text-slate-400 mt-1">Canal 10</p>
+                    <p class="text-xl font-bold text-amber-400 mt-3">---</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const firmasData = [
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Marnique Arce Roberto", "cargo": "Gerente Sénior de Medio Ambiente", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Cabrera Noriega Luis", "cargo": "Superintedente de Operaciones Ambientales", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Soriano Chávez Manuel", "cargo": "Superintedente Socioambiental", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Campos Guerra Rosa", "cargo": "Superintedente de Sistema de Gestion y Cumplimiento Ambiente", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Aranda Clemente Celedonio", "cargo": "Ingeniero Ambiental Senior", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Robles Castro Alexander", "cargo": "Ingeniero Ambiental I", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Albornoz Chavez Edgardo", "cargo": "Tecnico Ambiental I", "observacion": "AUTORIZADO POR: Roberto Manrique Arce.\n(CORREO 20NOV24)"},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Anaya Garay Luis", "cargo": "Tecnico Ambiental I", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Carrasco Ortiz Francisco", "cargo": "Tecnico Ambiental I", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Flores Peña Zaiyh", "cargo": "Tecnico Ambiental II", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Chumbes Sotelo Rusber", "cargo": "Tecnico Ambiental I", "observacion": "AUTORIZADO POR: Roberto Manrique Arce.\n(CORREO 20NOV24)"},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Romero Granados Luis", "cargo": "Tecnico Ambiental Senior", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "PLANIFICACIÓN AMBIENTAL", "cargo": "", "observacion": "AUTORIZADO POR:\nGerenete Calmell del Solar Avellaneda, Erika (Correo 09/04/2026)"},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Arias Chávez, Jimena", "cargo": "Ingeniera Ambiental", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Aranda Clemente, Celedonio", "cargo": "Ingeniero Ambiental Senior", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Higinio Ludeña, Mitzi", "cargo": "Ingeniera Ambiental Senior", "observacion": ""},
+            {"area": "EHS - MEDIO AMBIENTE", "nombre": "Montesinos Leon, Mayra", "cargo": "Ingeniera Ambiental Senior", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Hillenbrand Torres Manuela", "cargo": "Gerente de Gestión Social", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Yepez Ruiz Santos", "cargo": "Gerente de Gestión Social Operaciones", "observacion": "SOLO DE MINA A SAN MARCOS Y VICEVERSA / VEHÍCULOS LIVIANOS"},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Visscher Butron Lucinda", "cargo": "Superintendente de Relaciones Comunitarias Concentraducto", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Dulanto Bautista Marco", "cargo": "Superintendente de Relaciones Comunitarias", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Morales Morales Gladis", "cargo": "Asistente de Viseprecidencia", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Ocharán Oblitas César", "cargo": "Superintendente de  Gestión Social - Mina", "observacion": "43685.0"},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Huaman Rebatta Dennis", "cargo": "Supervisor Sr de Relaciones Comunitarias", "observacion": ""},
+            {"area": "RELACIONES COMUNITARIAS", "nombre": "Hernandez Bustos Patricia", "cargo": "Coordinadora de Procesos", "observacion": "correo 04/09/2018"},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Giles Herrera Lucia", "cargo": "Gerente de Relaciones Laborales", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Jara Remigio Silvio", "cargo": "Gerente de Transporte y Campamento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Rojas Marin Julio", "cargo": "Superintendente de Transporte y Campamento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Baluarte Flores Fernando", "cargo": "Superintendente de Transporte y Campamento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "García Dyer Alfredo", "cargo": "Jefe de Transporte y Campamento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Vega Galdos Javier", "cargo": "Superintendente de Relaciones Laborales", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Pinto Loaces José", "cargo": "Supervisor de Campamento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Aparcana Carlos Javier", "cargo": "Jefe de Mantenimiento", "observacion": ""},
+            {"area": "RRHH COM. CORP Y SEG", "nombre": "Carazas Uscata Victor", "cargo": "Supervisor de Campamento", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Estrella Calero David", "cargo": "Gerente de Concentradora", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Goicochea Gamarra, Pedro", "cargo": "Superindentendente de Mineroducto", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Soto Galindo Erick", "cargo": "Superintendente de Manejo de Aguas y Relaves", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Lindo Veliz Jesús", "cargo": "Superintendente de Operaciones Concentradora", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Rivera Alvarez Eleuterio", "cargo": "Supervisor Senior de Concentradora", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Cusihuaman Palomino Wilfredo", "cargo": "Supervisor Senior de Concentradora", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Huarsaya Quispe Gabriel", "cargo": "Supervisor Senior de Concentradora", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Coaguila Valdez Jose", "cargo": "Supervisor Senior de Manejo de Aguas y Releves", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Jarufe Choque Jaime", "cargo": "Supervisor Senior de Operaciones Mineroducto", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Carnero Torres Henry", "cargo": "Jefe de Integridad", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Quispe Mamani, Angel", "cargo": "Ing. Senior de Planeamiento de Aguas y Releves", "observacion": "correo 19/03/2021"},
+            {"area": "CONCENTRADORA", "nombre": "Fernando Rodriguez Paredes", "cargo": "Supervisor  de Manejo de Aguas y Releves", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Jimmy Magan Alfaro", "cargo": "Supervisor  de Manejo de Aguas y Releves", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "John Achancaray Mora", "cargo": "Supervisor  de Manejo de Aguas y Releves", "observacion": ""},
+            {"area": "CONCENTRADORA", "nombre": "Jorge Perez Garcia", "cargo": "Supervisor  de Manejo de Aguas y Releves", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Galarza Herrera Jorge", "cargo": "Gerente de Mina", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Villegas Manrique José", "cargo": "Gerente de Mejora del Negocio", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Cruces Herrera Jesus", "cargo": "Superintendente de Operaciones Mina", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Vera Salhue Armando", "cargo": "Superintendente de Operaciones Mina", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Cruz Alfaro Hilder", "cargo": "Superintendente de Vías y Proyectos", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Ravines Paz Oscar", "cargo": "Jefe de Planeamiento a Corto Plazo", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "San Juan Paredes German", "cargo": "Supervisor Senior de Topografia", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Reyes Bartra Edgardo", "cargo": "Supervisor General de Producción Mina", "observacion": "correo"},
+            {"area": "OPERACIONES", "nombre": "Torres Villanueva Enrique", "cargo": "Supervisor Sr. de Vías y Proyectos", "observacion": ""},
+            {"area": "OPERACIONES", "nombre": "Moscoso Ortega Lino", "cargo": "Supervisor Sr. de Vías y Proyectos", "observacion": ""},
+            {"area": "GEOTECNIA", "nombre": "Torres Fajardo Angelica", "cargo": "Gerente de Geologia", "observacion": ""},
+            {"area": "GEOTECNIA", "nombre": "Sanchez Díaz Mauro Alberto", "cargo": "Superintendente de Desarrollo Geotécnico e Hidrogeológico", "observacion": "43336.0"},
+            {"area": "GEOTECNIA", "nombre": "Casafranca Medina, Jaime", "cargo": "Ingeniero Sr de Presa de Relaves, Infraestructura, Carreteras y Túneles", "observacion": "correo 24/07/2020"},
+            {"area": "GEOTECNIA", "nombre": "Quispe Yupanqui, Ike", "cargo": "Ingeniero Sr de Presa de Ground Control, Wall Control & Pit Dewatering", "observacion": "correo 24/07/2020"},
+            {"area": "GEOTECNIA", "nombre": "Luis Mautino Villarreal", "cargo": "Ingeniero Geotécnico Sénior", "observacion": "correo 24/07/2020"},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Matos Apolinario, Lino", "cargo": "Gerente de Mantenimiento", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Chin Wong Carlos", "cargo": "Superintendente de Armado y Desarmado de Equipos", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Zarate Castellares Edgar", "cargo": "Superintendente de Mantenimiento Concentradora", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Gutierrez Gutierrez Saul", "cargo": "Superintendente De Sistemas De Potencia Electricidad E Instrumentación", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Aldama Meza Raul", "cargo": "Superintendente de Mantenimiento Puerto", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Moyonero Jordan Armando", "cargo": "Superintendente de Proyectos y Tegnologia", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Zevallos Vargas Miguel", "cargo": "Supervisor Sr. De Servicios Generales y Carreteras", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Vargas Garcia Jose", "cargo": "Supervisor Senior de Mantenimiento de Carreteras", "observacion": "CORREO DEL 28/06/23"},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Safra Muñoz Porfirio", "cargo": "Supervisor Senior de Mantenimiento Concentradora", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Saturno Cayetano Oscar", "cargo": "Supervisor Senior de Mantenimiento Concentradora", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Huaroto Ajalcriña Mateo", "cargo": "Supervisor Senior de Mantenimiento Mina", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Barriga Prado Jose", "cargo": "Supervisor Senior de Sistemas de Potencia", "observacion": ""},
+            {"area": "MANTENIMIENTO MINA - CONCENTRADORA", "nombre": "Huanca Alpaca Herald", "cargo": "Supervisor Senior Ing. Mantenimiento y Confiabilidad", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Villegas Vassallo Michele", "cargo": "Gerente Senior de Cadena de Abastecimiento", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Martinez Valverde Jorge", "cargo": "Gerente de Cadena de Abastecimiento Operaciones", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Herrera Gonzlaes Pratt Guillermo", "cargo": "Superintendente de Abastecimiento Estrategico servicios", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Herrera Arce Carlos", "cargo": "Superintendente de Abastecimiento Operacional", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Deza Vargas Roberto", "cargo": "Superintendente de Materiales y Transporte", "observacion": "correo 02/07/2019"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Wong Spagnol Franz", "cargo": "Superintendente de Abastecimiento Estrategico Bienes", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Gonzales Cordero Jaime", "cargo": "Jefe de Almacenes", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Mendoza Causso Marco", "cargo": "Supervisor Sr. de Almacén", "observacion": "43816.0"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Chavez Alfaro Victoriano", "cargo": "Analista Logistico", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Rosales Francia Frank", "cargo": "Planificador de Materiales", "observacion": "43816.0"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Leon Saravia, Henry", "cargo": "Supervisor Sr. de Almacén", "observacion": "43816.0"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Briceño Brain Edgar", "cargo": "Jefe de Abastecimiento Estrategico servicios", "observacion": ""},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Morales Reyes Giancarlo", "cargo": "Administrador Sr. De Procesos y Data Analítica", "observacion": "correo 11/07/2019"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Valencia Avila Jorge", "cargo": "Comprador", "observacion": "43816.0"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Peña santillan Juvenal", "cargo": "Analista Logistico", "observacion": "correo 13/09/2021"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Veramendi Garay Guillermo", "cargo": "Asistente Logistico I", "observacion": "correo 21/12/2021"},
+            {"area": "CADENA DE ABASTECIMIENTO", "nombre": "Parra Dextre Fidel", "cargo": "Operador de Almacen I", "observacion": "correo 21/12/2021"},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Zavala Lulo Jose", "cargo": "Gerente de Presa de Relaves y Obras Civiles", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Ascencion Ugarte Oscar", "cargo": "Gerente de Planta Concentradora y Obras Electro Mecánicas", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Rodriguez Siles Alfredo", "cargo": "Superintendente de Construcción, Presa de Relaves y Dique Auxiliar", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Romero Gallegos Efren", "cargo": "Jefe de Ingenieria", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Mio Serrato Ernesto", "cargo": "Supervisor Senior de Ingeniería", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Calderon Velasquez Faustino Ignacio", "cargo": "Supervisor Senior de Construcción", "observacion": ""},
+            {"area": "PORTAFOLIO DE PROYECTOS", "nombre": "Segundo Suarez Vilela", "cargo": "Técnico de laboratorio de suelos", "observacion": "correo 11/09/2021"},
+            {"area": "COMUNICACIONES", "nombre": "Fiori Gonzalez Carmela", "cargo": "Superintedente de Comunicación Interna", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Mamani Espinoza Luis", "cargo": "Gerente de Planeamiento largo plazo", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "León Aguilar Carlos", "cargo": "Gerente de Estratégia de Relaves (reporta a la presidencia)", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Canchis Pérez Lucio", "cargo": "Superintendente de Geología", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Cueva Arauzo Omar", "cargo": "Ing. Senior de Perforación y Voladura", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 27/09/24 POR LEON ROBLES YEORHINIO)"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Fernandez Castillo Ernesto", "cargo": "Superintendente de Estudios de filtración de relaves", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Jimmy Becerra Chamorro", "cargo": "Superintendente de Perforación y voladura", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Gibbons Navarro Efrain", "cargo": "Jefe de Perforación", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Sandoval Gonzales Juan Carlos", "cargo": "Geólogo Staff", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Nuñez Alvarez José Luis", "cargo": "Geólogo Staff", "observacion": ""},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "David Paredes Pareja", "cargo": "Geólogo Staff", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 04/01/25 POR JAVIER MERCADO)"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Maylin Mendoza Mondragón", "cargo": "Geólogo Staff", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 09/12/23 POR JHON QUISPE LOAYZA)"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Loli Morales Walter", "cargo": "Ingeniero Senior de Estudios Mineros", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 09/12/23 POR JHON QUISPE LOAYZA)"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Rolando Raúl Parra Solorzano", "cargo": "Jefe de core Shack", "observacion": "correo (15/12/2022) MATERIALES Y VEHICULOS"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Juan Carlos Alarcon Bendezu", "cargo": "Técnico Metalurgico", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 10/09/24 POR CARLOS LEON AGUILAR)"},
+            {"area": "PLANIFICACION Y DESARROLLO DE NEGOCIOS", "nombre": "Braulio Manrique Linares", "cargo": "Técnico Metalurgico", "observacion": "AUTORIZADO MATERIALES Y VEHICULOS (CORREO 10/09/24 POR CARLOS LEON AGUILAR)"},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Sifuentes Vargas Fabiola", "cargo": "Vicepresidente de Sauld y Seguridad Industrial y Medio Ambiente", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Oyola Neyra Walter", "cargo": "Gerente de Salud", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Guerrero Valqui Jorge", "cargo": "Gerente de Seguridad Industrial", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Hermosilla Riquelme Waldo", "cargo": "Superintendente MASSC", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Boucher Gandarillas Victor", "cargo": "Supervisor Senior de Seguridad Industrial", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Roberto Morla Vargas", "cargo": "Supervisor de servicios de Emergencia", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Omar Carbajal Barrantes", "cargo": "Supervisor de servicios de Emergencia", "observacion": ""},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Juan Carlos Rodrigo", "cargo": "Jefe de Servicios de Emergencia", "observacion": "correo 29/08/2019"},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Cerna Mantilla Rafael", "cargo": "Jefe de Ingeniería Contraincendios", "observacion": "correo 12/06/2019"},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Cadenas Erazo Eric", "cargo": "Supervisor Senior de Ergonomia", "observacion": "correo 27/05/2026"},
+            {"area": "SALUD Y SEGURIDAD INDUSTRIAL", "nombre": "Maguiña Aguero Aldo", "cargo": "Ing. Senior de Seguridad Industrial", "observacion": ""},
+            {"area": "EXCELENCIA OPERACIONAL", "nombre": "Saul Lozano Benique", "cargo": "Gerente de Gestion de Riesgos", "observacion": ""},
+            {"area": "EXCELENCIA OPERACIONAL", "nombre": "Huarcaya Segovia Guido", "cargo": "Superintendente de Aseguramiento y Procesos", "observacion": ""},
+            {"area": "EXCELENCIA OPERACIONAL", "nombre": "Ruju Wege Alex", "cargo": "Superintendent de Riesgos y Continuidad de Negocios", "observacion": ""},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Estrada Hora Rafael", "cargo": "Gerente de Tecnologia de laInformacion y Telecomunicaciones", "observacion": ""},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Paredes Chirinos Hector", "cargo": "Superintendente de Control de Procesos", "observacion": ""},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Mesia Ibarra Luis", "cargo": "Superintendente de Sistemas", "observacion": ""},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Richard Revoredo Ferroggiaro", "cargo": "Superintendente de Telecomunicaciones", "observacion": ""},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Adolfo bustinza Espinoza", "cargo": "Supervisor de  Senior de Dispacth Radios y Microondas", "observacion": "correo 21/11/2019"},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Cardenas Gonzales Andres", "cargo": "Supervisor Sr.Redes Telecomunicaciones", "observacion": "correo 07/12/2020"},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Jaime Gomez Johns", "cargo": "Supervisor Adminsitrador Redes", "observacion": "correo 07/12/2020"},
+            {"area": "TECNOLOGIAS DE LA INFORMACION Y TELECOMUNICACIONES", "nombre": "Salcedo Colonia William", "cargo": "Ingeniero senior de Estudios Mineros", "observacion": "correo 03/07/2023"},
+            {"area": "TIERRAS Y REASENTAMIENTO", "nombre": "Marco Linares Sanz", "cargo": "Supervisor Senior de Tierras y Reasentamiento", "observacion": ""},
+            {"area": "TIERRAS Y REASENTAMIENTO", "nombre": "Paredes Castillo Wagner", "cargo": "Auxiliar de Tierras y Reasentamiento", "observacion": ""},
+            {"area": "TIERRAS Y REASENTAMIENTO", "nombre": "Erazo Quito Juan", "cargo": "Auxiliar de Tierras y Reasentamiento", "observacion": ""},
+            {"area": "LEGAL", "nombre": "Navarro Coquis Augusto", "cargo": "Gerente Legal Regulatorio", "observacion": ""},
+            {"area": "LEGAL", "nombre": "Goyzueta Puccio Vania", "cargo": "Superintendente Legal Regulatorio", "observacion": ""},
+            {"area": "LEGAL", "nombre": "Torres Mariño Carlos Alberto", "cargo": "Abogado I", "observacion": "correo 11/02/2026"},
+            {"area": "LEGAL", "nombre": "Guillen Aoki Luis Miguel", "cargo": "Abogado", "observacion": "correo 11/02/2026"},
+        ];
+
+        function renderFirmas(data) {
+            const tbody = document.getElementById('tbodyFirmas');
+            document.getElementById('countFirmas').innerText = data.length;
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-400">No se encontraron registros coincidentes.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-750 transition border-b border-slate-700/50';
+                tr.innerHTML = `
+                    <td class="p-4 font-medium text-slate-300"><span class="bg-slate-700 text-xs px-2.5 py-1 rounded-lg">${item.area}</span></td>
+                    <td class="p-4 font-semibold text-white">${item.nombre}</td>
+                    <td class="p-4 text-slate-300">${item.cargo}</td>
+                    <td class="p-4 text-slate-400 text-xs">${item.observacion || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = firmasData.filter(item => 
+                item.nombre.toLowerCase().includes(query) ||
+                item.cargo.toLowerCase().includes(query) ||
+                item.area.toLowerCase().includes(query) ||
+                item.observacion.toLowerCase().includes(query)
+            );
+            renderFirmas(filtered);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-red-500', 'text-white');
+                el.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabName);
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+            activeBtn.classList.add('border-red-500', 'text-white');
+        }
+
+        // Initial render
+        renderFirmas(firmasData);
+    </script>
+</body>
+</html>

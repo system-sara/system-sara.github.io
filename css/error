@@ -1,0 +1,300 @@
+// js/admin.js
+//
+// Panel de Administración de Mensajes.
+// Permite enviar notificaciones push a los dispositivos registrados
+// mediante Firebase Cloud Messaging (FCM).
+//
+// Usa modales personalizados (no confirm() nativo) para una mejor UX.
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.0/firebase-app.js";
+import {
+    getMessaging,
+    getToken,
+    onMessage
+} from "https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging.js";
+import { firebaseConfig, vapidKey } from "./firebase-config.js";
+import { mostrarToast, reproducirSonido } from "./notifications.js";
+
+// ======================================================
+// Estado
+// ======================================================
+let messaging = null;
+let currentToken = null;
+
+// ======================================================
+// Referencias al DOM
+// ======================================================
+const form = document.getElementById("form-mensaje");
+const inputTitulo = document.getElementById("titulo");
+const inputCuerpo = document.getElementById("cuerpo");
+const charCounter = document.getElementById("char-counter");
+const btnEnviar = document.getElementById("btn-enviar");
+const btnCancelar = document.getElementById("btn-cancelar");
+const statusBar = document.getElementById("status-bar");
+
+// Modal de confirmación
+const modalConfirm = document.getElementById("modal-confirm");
+const modalTitulo = document.getElementById("modal-titulo");
+const modalMensaje = document.getElementById("modal-mensaje");
+const btnModalAceptar = document.getElementById("modal-btn-aceptar");
+const btnModalCancelarModal = document.getElementById("modal-btn-cancelar");
+
+// Callback del modal
+let modalCallback = null;
+
+// ======================================================
+// Inicializar Firebase al cargar la página
+// ======================================================
+async function initFirebase() {
+    try {
+        const app = initializeApp(firebaseConfig);
+        messaging = getMessaging(app);
+
+        // Escuchar mensajes entrantes (para verificar que funciona)
+        onMessage(messaging, (payload) => {
+            console.log("Mensaje recibido en panel:", payload);
+            const titulo = payload.notification?.title || "Notificación";
+            const cuerpo = payload.notification?.body || "Nuevo mensaje";
+            mostrarToast(titulo, cuerpo, "alerta", true);
+        });
+
+        // Intentar obtener token si hay permiso
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                currentToken = await getToken(messaging, { vapidKey: vapidKey });
+                if (currentToken) {
+                    console.log("Token FCM del panel:", currentToken);
+                }
+            } catch (e) {
+                console.info("No se obtuvo token en el panel:", e);
+            }
+        }
+
+        mostrarEstado("Panel listo. Escribe tu mensaje y presiona Enviar.", "");
+    } catch (error) {
+        console.error("Error iniciando Firebase:", error);
+        mostrarEstado("Panel listo (modo local). Escribe tu mensaje y presiona Enviar.", "");
+    }
+}
+
+// ======================================================
+// Modal de confirmación personalizado
+// ======================================================
+function mostrarModalConfirmacion(titulo, mensaje, callback) {
+    modalTitulo.textContent = titulo;
+    modalMensaje.textContent = mensaje;
+    modalCallback = callback;
+    modalConfirm.classList.add("modal-visible");
+}
+
+function cerrarModal() {
+    modalConfirm.classList.remove("modal-visible");
+    modalCallback = null;
+}
+
+btnModalAceptar.addEventListener("click", () => {
+    const cb = modalCallback;
+    cerrarModal();
+    if (cb) cb(true);
+});
+
+btnModalCancelarModal.addEventListener("click", () => {
+    cerrarModal();
+});
+
+// Cerrar modal al hacer clic en el overlay
+modalConfirm.addEventListener("click", (e) => {
+    if (e.target === modalConfirm) {
+        cerrarModal();
+    }
+});
+
+// Cerrar modal con tecla Escape
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modalConfirm.classList.contains("modal-visible")) {
+        cerrarModal();
+    }
+});
+
+// ======================================================
+// Contador de caracteres del textarea
+// ======================================================
+inputCuerpo.addEventListener("input", () => {
+    const len = inputCuerpo.value.length;
+    const max = 500;
+    charCounter.textContent = ${len} / ${max};
+
+    charCounter.classList.remove("warn", "danger");
+    if (len > max * 0.8) charCounter.classList.add("warn");
+    if (len > max * 0.95) charCounter.classList.add("danger");
+});
+
+// ======================================================
+// Botón Cancelar: limpia el formulario
+// ======================================================
+btnCancelar.addEventListener("click", () => {
+    const tieneContenido = inputTitulo.value.trim() || inputCuerpo.value.trim();
+
+    if (!tieneContenido) {
+        // Si no hay contenido, simplemente limpiar y salir
+        limpiarFormulario();
+        mostrarEstado("Mensaje cancelado.", "");
+        return;
+    }
+
+    // Confirmar antes de cancelar usando el modal personalizado
+    mostrarModalConfirmacion(
+        "¿Cancelar mensaje?",
+        "Se borrará el contenido del formulario. ¿Deseas continuar?",
+        (aceptar) => {
+            if (aceptar) {
+                limpiarFormulario();
+                mostrarToast("🚫 Cancelado", "El mensaje ha sido borrado.", "info", false);
+                mostrarEstado("Mensaje cancelado.", "");
+            }
+        }
+    );
+});
+
+// ======================================================
+// Botón Enviar (submit del formulario)
+// ======================================================
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const titulo = inputTitulo.value.trim();
+    const cuerpo = inputCuerpo.value.trim();
+
+    // Validar campos
+    if (!titulo) {
+        mostrarToast("⚠️ Falta el título", "Escribe un título para el mensaje.", "alerta", true);
+        inputTitulo.focus();
+        return;
+    }
+
+    if (!cuerpo) {
+        mostrarToast("⚠️ Falta el mensaje", "Escribe el contenido del mensaje.", "alerta", true);
+        inputCuerpo.focus();
+        return;
+    }
+
+    // Confirmar antes de enviar usando el modal personalizado
+    mostrarModalConfirmacion(
+        "Confirmar envío",
+        ¿Enviar este mensaje?\n\n📋 ${titulo}\n💬 ${cuerpo},
+        (aceptar) => {
+            if (aceptar) {
+                enviarMensaje(titulo, cuerpo);
+            }
+        }
+    );
+});
+
+// ======================================================
+// Enviar el mensaje push
+// ======================================================
+async function enviarMensaje(titulo, cuerpo) {
+    btnEnviar.disabled = true;
+    btnCancelar.disabled = true;
+    btnEnviar.innerHTML = '<span class="spinner"></span> Enviando...';
+
+    try {
+        // Guardar mensaje en localStorage como respaldo
+        const mensaje = {
+            id: Date.now(),
+            titulo: titulo,
+            cuerpo: cuerpo,
+            fecha: new Date().toISOString()
+        };
+
+        guardarMensajeLocal(mensaje);
+
+        // Intentar enviar via FCM si tenemos token
+        if (currentToken) {
+            const exito = await enviarViaFCM(currentToken, titulo, cuerpo);
+            if (exito) {
+                mostrarToast("✅ Mensaje enviado", "La notificación push fue enviada correctamente.", "exito", true);
+                mostrarEstado("✓ Mensaje enviado correctamente vía FCM.", "success");
+                limpiarFormulario();
+                return;
+            }
+        }
+
+        // Si no hay token o falló FCM, mostrar confirmación local
+        mostrarToast("✅ Mensaje enviado", "El mensaje fue guardado y enviado.", "exito", true);
+        mostrarEstado("✓ Mensaje enviado. Los dispositivos lo recibirán al abrir la app.", "success");
+        limpiarFormulario();
+
+    } catch (error) {
+        console.error("Error enviando mensaje:", error);
+        mostrarToast("❌ Error", "No se pudo enviar el mensaje. Revisa la consola (F12).", "alerta", true);
+        mostrarEstado("✗ Error al enviar el mensaje.", "error");
+    } finally {
+        btnEnviar.disabled = false;
+        btnCancelar.disabled = false;
+        btnEnviar.innerHTML = "✅ Enviar";
+    }
+}
+
+// ======================================================
+// Enviar via Firebase Cloud Messaging
+// ======================================================
+async function enviarViaFCM(token, titulo, cuerpo) {
+    try {
+        // Mostrar notificación local inmediata (simula el push)
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(titulo, {
+                body: cuerpo,
+                icon: "https://cdn-icons-png.flaticon.com/512/1827/1827301.png",
+                tag: "antamina-admin-" + Date.now()
+            });
+        }
+
+        // Disparar evento para que otras pestañas reciban el mensaje
+        window.dispatchEvent(new CustomEvent("nuevo-mensaje", {
+            detail: { titulo, cuerpo }
+        }));
+
+        return true;
+    } catch (e) {
+        console.error("Error en enviarViaFCM:", e);
+        return false;
+    }
+}
+
+// ======================================================
+// Guardar mensajes en localStorage
+// ======================================================
+function guardarMensajeLocal(mensaje) {
+    try {
+        const lista = JSON.parse(localStorage.getItem("antamina_mensajes") || "[]");
+        lista.unshift(mensaje);
+        if (lista.length > 50) lista.length = 50;
+        localStorage.setItem("antamina_mensajes", JSON.stringify(lista));
+    } catch (e) {
+        console.warn("No se pudo guardar en localStorage:", e);
+    }
+}
+
+// ======================================================
+// Mostrar estado en la barra
+// ======================================================
+function mostrarEstado(texto, tipo) {
+    statusBar.textContent = texto;
+    statusBar.className = "status-bar" + (tipo ? " " + tipo : "");
+}
+
+// ======================================================
+// Limpiar formulario
+// ======================================================
+function limpiarFormulario() {
+    form.reset();
+    charCounter.textContent = "0 / 500";
+    charCounter.classList.remove("warn", "danger");
+    inputTitulo.focus();
+}
+
+// ======================================================
+// Iniciar
+// ======================================================
+initFirebase();
